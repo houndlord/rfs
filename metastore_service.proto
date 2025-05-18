@@ -1,0 +1,68 @@
+syntax = "proto3";
+
+message BlockReplicaLocation {
+    int32 data_server_id = 1;
+    string chunk_handle = 2;
+}
+
+message Timestamp {
+    int64 seconds = 1;
+    int32 nanos = 2;
+}
+
+message FileChunkReplicas {
+    repeated BlockReplicaLocation replicas = 1;
+}
+// --- Wrappers for maps to be used in oneof ---
+message DirectoryEntriesMap {
+    map<string, int64> entries = 1;
+}
+
+message FileChunksMap {
+    map<int32, FileChunkReplicas> chunks = 1;
+}
+// --- End of wrappers ---
+
+message Inode {
+  int64 inode_id = 1;
+  uint32 mode = 2;        // Permissions only; file type (dir/file/symlink) is via oneof.
+  uint32 nlink = 3;
+  uint32 uid = 4;
+  uint32 gid = 5;
+  int64 size = 6;
+
+  Timestamp access_time = 7;
+  Timestamp modification_time = 8;
+  Timestamp change_time = 9;
+
+  oneof type_specific_data {
+    DirectoryEntriesMap directory_data = 10; // Using the wrapper
+    FileChunksMap file_data = 11;           // Using the wrapper
+    string symlink_target_path = 12;
+  }
+}
+
+
+
+message LookupRequest {
+  int64 parent_inode_id = 1;
+  string name = 2;
+}
+
+message LookupResponse {
+  StatusResponse status = 1;
+  optional int64 inode_id = 2;
+  optional uint32 mode = 3;
+}
+
+enum StatusCode {
+    OK = 0;
+    NOT_FOUND = 1;
+    INVALID_ARGUMENT = 2;
+    INTERNAL_ERROR = 3;
+}
+
+message StatusResponse {
+    StatusCode code = 1;
+    optional string error_message = 2;
+}
